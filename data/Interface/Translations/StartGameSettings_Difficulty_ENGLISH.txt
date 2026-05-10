@@ -1,0 +1,2 @@
+$Start Game	Start Game
+$SGS_HelpDifficulty	Difficulty affects how much damage your character will do to enemies (the higher the difficulty, the less damage you will do) in addition to how much damage you will take (the higher the difficulty, the more damage you will take).

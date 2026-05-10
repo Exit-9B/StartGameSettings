@@ -1,0 +1,16 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Exit-9B/StartGameSettings/main/docs/StartGameSettings.schema.json",
+  "NewGame": [
+    {
+      "id": "SurvivalModeToggle",
+      "text": "$Survival Mode",
+      "help": "$SGS_HelpSurvival",
+      "type": "toggle",
+      "valueOptions": {
+        "defaultValue": 0,
+        "sourceType": "GlobalValue",
+        "sourceForm": "ccQDRSSE001-SurvivalMode.esl|828"
+      }
+    }
+  ]
+}

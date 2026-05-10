@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Exit-9B/StartGameSettings/main/docs/StartGameSettings.schema.json",
+  "NewGame": [
+    {
+      "id": "iDifficulty:GamePlay",
+      "text": "$Difficulty",
+      "help": "$SGS_HelpDifficulty",
+      "type": "stepper",
+      "valueOptions": {
+        "defaultValue": 2,
+        "options": [
+          "$Very Easy",
+          "$Easy",
+          "$Normal",
+          "$Hard",
+          "$Very Hard",
+          "$Legendary"
+        ],
+        "sourceType": "INIPrefSetting"
+      }
+    }
+  ]
+}

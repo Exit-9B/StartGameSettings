@@ -1,0 +1,1 @@
+$SGS_HelpSurvival	Survival adds the need to eat, sleep, and stay warm. It also adds additional challenges, such as no fast travel, reduced carry weight, and leveling up only when you sleep.

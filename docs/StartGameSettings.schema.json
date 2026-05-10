@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Exit-9B/StartGameSettings/main/docs/StartGameSettings.schema.json",
+  "title": "Start Game Settings",
+  "description": "Defines settings to appear in the main menu",
+  "type": "object",
+  "properties": {
+    "NewGame": {
+      "description": "Settings for the new game panel",
+      "type": "array",
+      "items": { "$ref": "#/$defs/item" }
+    }
+  },
+
+  "$defs": {
+    "localizedString": {
+      "type": "string",
+      "oneOf": [
+        {
+          "pattern": "^[^\\$]",
+          "description": "WARNING: String will not be localized",
+          "deprecated": true
+        },
+        {
+          "pattern": "^\\$",
+          "description": "Localized string"
+        }
+      ]
+    },
+
+    "form": {
+      "description": "Look up a Form by a plugin file and Form ID (e.g. \"MyMod.esp|D62\")",
+      "type": "string",
+      "pattern": "^[^\\\\\\/:*?\"<>|]+\\.es[lmp]\\|(0[Xx])?[\\dA-Fa-f]{1,8}$"
+    },
+
+    "item": {
+      "description": "Setting item specification",
+      "type": "object",
+      "properties": {
+        "text": {
+          "description": "Text label for the setting",
+          "allOf": [ { "$ref": "#/$defs/localizedString" } ]
+        },
+        "id": {
+          "description": "Key for locating the setting's value from its source",
+          "type": "string"
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "type": { "const": "slider" },
+            "help": { "$ref": "#/$defs/help-text" },
+            "valueOptions": {
+              "type": "object",
+              "properties": {
+                "min": { "type": "number" },
+                "max": { "type": "number" },
+                "step": { "type": "number" }
+              },
+              "allOf": [ { "$ref": "#/$defs/valueOptions-valueSource" } ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "type": { "const": "stepper" },
+            "help": { "$ref": "#/$defs/help-text-or-array" },
+            "valueOptions": {
+              "type": "object",
+              "properties": {
+                "options": {
+                  "type": "array",
+                  "items": { "$ref": "#/$defs/localizedString" }
+                }
+              },
+              "allOf": [ { "$ref": "#/$defs/valueOptions-valueSource" } ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "type": { "const": "toggle" },
+            "help": { "$ref": "#/$defs/help-text" },
+            "valueOptions": {
+              "type": "object",
+              "allOf": [ { "$ref": "#/$defs/valueOptions-valueSource" } ]
+            }
+          }
+        }
+      ],
+      "required": ["type", "text"]
+    },
+
+    "help-text": {
+      "description": "Description text for the setting",
+      "allOf": [ { "$ref": "#/$defs/localizedString" } ]
+    },
+
+    "help-text-or-array": {
+      "oneOf": [
+        { "$ref": "#/$defs/help-text" },
+        {
+          "type": "array",
+          "items": {
+            "description": "Description text for the corresponding option",
+            "allOf": [ { "$ref": "#/$defs/localizedString" } ]
+          }
+        }
+      ]
+    },
+
+    "valueOptions-valueSource": {
+      "properties": {
+        "sourceType": {
+          "description": "Source type for the setting to store and retrieve its value",
+          "enum": [
+            "GlobalValue",
+            "GameSetting",
+            "INIPrefSetting"
+          ]
+        },
+        "sourceForm": { "$ref": "#/$defs/form" },
+        "defaultValue": {
+          "description": "Value used when resetting to default",
+          "anyOf": [
+            { "type": "boolean" },
+            { "type": "number" }
+          ]
+        }
+      }
+    }
+  }
+}
