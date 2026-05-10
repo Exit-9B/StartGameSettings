@@ -4,7 +4,7 @@
 
 #include <xbyak/xbyak.h>
 
-#pragma section("jit", execute)
+#pragma section(".jit", execute)
 
 namespace Hooks
 {
@@ -71,7 +71,7 @@ namespace Hooks
 			return;
 		}
 
-		__declspec(allocate("jit")) alignas(16) static constinit std::array<std::uint8_t, 32>
+		__declspec(allocate(".jit")) alignas(16) static constinit std::array<std::uint8_t, 32>
 			buffer{ REL::RET };
 		_iDifficultySetting = SKSE::GetTrampoline().write_call<6>(hook.address(), buffer.data());
 
