@@ -38,6 +38,14 @@
       "description": "Setting item specification",
       "type": "object",
       "properties": {
+        "type": {
+          "description": "Setting type",
+          "enum": [
+            "slider",
+            "stepper",
+            "toggle"
+          ]
+        },
         "text": {
           "description": "Text label for the setting",
           "allOf": [ { "$ref": "#/$defs/localizedString" } ]
@@ -47,48 +55,73 @@
           "type": "string"
         }
       },
-      "oneOf": [
+      "allOf": [
+
         {
-          "properties": {
-            "type": { "const": "slider" },
-            "help": { "$ref": "#/$defs/help-text" },
-            "valueOptions": {
-              "type": "object",
-              "properties": {
-                "min": { "type": "number" },
-                "max": { "type": "number" },
-                "step": { "type": "number" }
-              },
-              "allOf": [ { "$ref": "#/$defs/valueOptions-valueSource" } ]
+          "$comment": "Slider properties",
+          "if": {
+            "properties": {
+              "type": { "const": "slider" }
+            }
+          },
+          "then": {
+            "properties": {
+              "help": { "$ref": "#/$defs/help-text" },
+              "valueOptions": {
+                "type": "object",
+                "properties": {
+                  "min": { "type": "number" },
+                  "max": { "type": "number" },
+                  "step": { "type": "number" }
+                },
+                "allOf": [ { "$ref": "#/$defs/valueOptions-valueSource" } ]
+              }
             }
           }
         },
+
         {
-          "properties": {
-            "type": { "const": "stepper" },
-            "help": { "$ref": "#/$defs/help-text-or-array" },
-            "valueOptions": {
-              "type": "object",
-              "properties": {
-                "options": {
-                  "type": "array",
-                  "items": { "$ref": "#/$defs/localizedString" }
-                }
-              },
-              "allOf": [ { "$ref": "#/$defs/valueOptions-valueSource" } ]
+          "$comment": "Stepper properties",
+          "if": {
+            "properties": {
+              "type": { "const": "stepper" }
+            }
+          },
+          "then": {
+            "properties": {
+              "help": { "$ref": "#/$defs/help-text-or-array" },
+              "valueOptions": {
+                "type": "object",
+                "properties": {
+                  "options": {
+                    "type": "array",
+                    "items": { "$ref": "#/$defs/localizedString" }
+                  }
+                },
+                "allOf": [ { "$ref": "#/$defs/valueOptions-valueSource" } ]
+              }
             }
           }
         },
+
         {
-          "properties": {
-            "type": { "const": "toggle" },
-            "help": { "$ref": "#/$defs/help-text" },
-            "valueOptions": {
-              "type": "object",
-              "allOf": [ { "$ref": "#/$defs/valueOptions-valueSource" } ]
+          "$comment": "Toggle properties",
+          "if": {
+            "properties": {
+              "type": { "const": "toggle" }
+            }
+          },
+          "then": {
+            "properties": {
+              "help": { "$ref": "#/$defs/help-text" },
+              "valueOptions": {
+                "type": "object",
+                "allOf": [ { "$ref": "#/$defs/valueOptions-valueSource" } ]
+              }
             }
           }
         }
+
       ],
       "required": ["type", "text"]
     },
