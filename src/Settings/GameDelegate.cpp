@@ -15,9 +15,12 @@ namespace Settings
 		RE::GFxMovieView* movie;
 		RE::GFxValue& entryObject;
 
-		void operator()(const std::monostate&) {}
-		void operator()(const std::string& help) { entryObject.SetMember("help", help.c_str()); }
-		void operator()(const std::vector<std::string>& help)
+		void operator()(const std::monostate&) const {}
+		void operator()(const std::string& help) const
+		{
+			entryObject.SetMember("help", help.c_str());
+		}
+		void operator()(const std::vector<std::string>& help) const
 		{
 			RE::GFxValue items;
 			movie->CreateArray(&items);
@@ -35,7 +38,7 @@ namespace Settings
 
 		using enum Settings::Type;
 
-		void operator()(const Settings::ItemA<slider>& item)
+		void operator()(const Settings::ItemA<slider>& item) const
 		{
 			entryObject.SetMember("movieType", 0);
 			entryObject.SetMember("text", item.text.c_str());
@@ -51,7 +54,7 @@ namespace Settings
 			}
 		}
 
-		void operator()(const Settings::ItemA<stepper>& item)
+		void operator()(const Settings::ItemA<stepper>& item) const
 		{
 			entryObject.SetMember("movieType", 1);
 			entryObject.SetMember("text", item.text.c_str());
@@ -70,7 +73,7 @@ namespace Settings
 			}
 		}
 
-		void operator()(const Settings::ItemA<toggle>& item)
+		void operator()(const Settings::ItemA<toggle>& item) const
 		{
 			entryObject.SetMember("movieType", 2);
 			entryObject.SetMember("text", item.text.c_str());
