@@ -54,28 +54,6 @@
           "description": "Key for locating the setting's value from its source",
           "type": "string"
         },
-        "groupControl": {
-          "oneOf": [
-            {
-              "type": "integer",
-              "minimum": 1
-            },
-            {
-              "type": "array",
-              "items": {
-                "oneOf": [
-                  {
-                    "type": "integer",
-                    "minimum": 1
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              }
-            }
-          ]
-        },
         "groupCondition": { "$ref": "#/$defs/groupCondition" }
       },
       "allOf": [
@@ -122,6 +100,20 @@
                   }
                 },
                 "allOf": [ { "$ref": "#/$defs/valueOptions-valueSource" } ]
+              },
+              "groupControl": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
               }
             }
           }
@@ -140,6 +132,10 @@
               "valueOptions": {
                 "type": "object",
                 "allOf": [ { "$ref": "#/$defs/valueOptions-valueSource" } ]
+              },
+              "groupControl": {
+                "type": "integer",
+                "minimum": 1
               }
             }
           }
