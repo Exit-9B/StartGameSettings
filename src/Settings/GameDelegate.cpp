@@ -84,6 +84,25 @@ namespace Settings
 		}
 	};
 
+	struct GroupControlInserter
+	{
+		std::vector<std::pair<group_t, bool>>& groupControls;
+		double value;
+
+		void operator()(std::monostate const&) const {}
+
+		void operator()(group_t group) const { groupControls.emplace_back(group, !!value); }
+
+		void operator()(std::vector<std::optional<group_t>> const& groups) const
+		{
+			for (const auto& [i, group] : std::views::enumerate(groups)) {
+				if (group) {
+					groupControls.emplace_back(*group, static_cast<std::ptrdiff_t>(value) == i);
+				}
+			}
+		}
+	};
+
 	[[nodiscard]] static const Item* QueryID(double ID)
 	{
 		if (ID >= ID_NewGame0) {
@@ -109,6 +128,25 @@ namespace Settings
 		}
 
 		return true;
+	}
+
+	[[nodiscard]] static bool HasGroupControl(const Item& item)
+	{
+		const GroupControl& groupControl = std::visit(
+			[](auto&& item)
+			{
+				return item.groupControl;
+			},
+			item);
+		return !std::holds_alternative<std::monostate>(groupControl);
+	}
+
+	[[nodiscard]] static bool HasGroupControl(double ID)
+	{
+		if (const auto item = QueryID(ID)) {
+			return HasGroupControl(*item);
+		}
+		return false;
 	}
 
 	static void StoreValue(double ID, double value)
@@ -147,13 +185,78 @@ namespace Settings
 			return;
 		}
 
-		const auto& collection = StaticCollection::Instance;
-		for (auto&& [i, item] : std::views::enumerate(collection.NewGame)) {
+		std::map<double, double> oldValues;
+		for (const auto i : std::views::iota(0U, entryList.GetArraySize())) {
 			RE::GFxValue entryObject;
-			movie->CreateObject(&entryObject);
-			std::visit(EntryDataSetter{ movie, entryObject }, item);
-			entryObject.SetMember("ID", ID_NewGame0 + i);
-			entryList.PushBack(entryObject);
+			entryList.GetElement(i, &entryObject);
+			if (entryObject.IsObject()) {
+				RE::GFxValue ID, value;
+				entryObject.GetMember("ID", &ID);
+				entryObject.GetMember("value", &value);
+				if (ID.IsNumber() && value.IsNumber()) {
+					oldValues[ID.GetNumber()] = value.GetNumber();
+				}
+			}
+		}
+		entryList.ClearElements();
+
+		std::size_t begin = 0;
+		for (const std::size_t sentinel : StaticCollection::NewGamePages) {
+			std::vector<std::pair<group_t, bool>> groupControls;
+			for (const auto i : std::views::iota(begin, sentinel)) {
+				const auto& item = StaticCollection::Instance.NewGame[i];
+				const GroupControl& groupControl = std::visit(
+					[](auto&& item)
+					{
+						return item.groupControl;
+					},
+					item);
+
+				if (std::holds_alternative<std::monostate>(groupControl)) {
+					continue;
+				}
+
+				double value;
+				if (const auto it = oldValues.find(ID_NewGame0 + i); it != oldValues.end()) {
+					value = it->second;
+				}
+				else {
+					value = std::visit(
+						[](auto&& item)
+						{
+							return item.FetchValue();
+						},
+						item);
+				}
+
+				std::visit(GroupControlInserter{ groupControls, value }, groupControl);
+			}
+
+			for (const auto i : std::views::iota(begin, sentinel)) {
+				const auto& item = StaticCollection::Instance.NewGame[i];
+
+				if (!std::visit(
+						[&](auto&& item)
+						{
+							return item.groupCondition
+								? std::visit(
+									  GroupConditionChecker{ groupControls },
+									  *item.groupCondition)
+								: true;
+						},
+						item))
+				{
+					continue;
+				}
+
+				RE::GFxValue entryObject;
+				movie->CreateObject(&entryObject);
+				std::visit(EntryDataSetter{ movie, entryObject }, item);
+				entryObject.SetMember("ID", ID_NewGame0 + i);
+				entryList.PushBack(entryObject);
+			}
+
+			begin = sentinel;
 		}
 	}
 
@@ -188,6 +291,11 @@ namespace Settings
 				"_root.MenuHolder.Menu_mc.bPrefsChanged",
 				true,
 				RE::GFxMovie::SetVarType::kNormal);
+		}
+
+		if (HasGroupControl(ID.GetNumber())) {
+			RE::FxResponseArgs<0> response{};
+			RE::FxDelegate::Invoke(movie, "RefreshSettingsList", response);
 		}
 	}
 

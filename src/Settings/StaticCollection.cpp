@@ -3,6 +3,7 @@
 namespace Settings::StaticCollection
 {
 	Collection Instance;
+	std::vector<std::size_t> NewGamePages;
 
 	void Load()
 	{
@@ -32,6 +33,8 @@ namespace Settings::StaticCollection
 			const auto buffer = std::make_unique<char[]>(size);
 			resource.read(buffer.get(), size);
 
+			const std::size_t position = Instance.NewGame.size();
+
 			const auto error = glz::read<glz::opts{
 				.comments = true,
 				.error_on_unknown_keys = false,
@@ -39,6 +42,11 @@ namespace Settings::StaticCollection
 
 			if (error) {
 				logger::error("Error occurred parsing config at position {}"sv, error.count);
+			}
+
+			const std::size_t newPosition = Instance.NewGame.size();
+			if (newPosition > position) {
+				NewGamePages.emplace_back(newPosition);
 			}
 		}
 	}

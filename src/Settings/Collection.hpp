@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Settings/GroupCondition.hpp"
+
 #include <enchantum/enchantum.hpp>
 #include <glaze/glaze.hpp>
 
@@ -60,6 +62,8 @@ namespace Settings
 		std::optional<std::string> id;
 		std::string text;
 		Help help;
+		GroupControl groupControl;
+		std::optional<GroupCondition> groupCondition;
 		std::optional<ValueOptionsA<TYPE>> valueOptions;
 
 		[[nodiscard]] inline double FetchValue() const;
