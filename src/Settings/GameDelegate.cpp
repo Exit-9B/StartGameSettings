@@ -36,9 +36,7 @@ namespace Settings
 		RE::GFxMovieView* movie;
 		RE::GFxValue& entryObject;
 
-		using enum Settings::Type;
-
-		void operator()(const Settings::ItemA<slider>& item) const
+		void operator()(const ItemA<Type::slider>& item) const
 		{
 			entryObject.SetMember("movieType", 0);
 			entryObject.SetMember("text", item.text.c_str());
@@ -54,7 +52,7 @@ namespace Settings
 			}
 		}
 
-		void operator()(const Settings::ItemA<stepper>& item) const
+		void operator()(const ItemA<Type::stepper>& item) const
 		{
 			entryObject.SetMember("movieType", 1);
 			entryObject.SetMember("text", item.text.c_str());
@@ -73,7 +71,7 @@ namespace Settings
 			}
 		}
 
-		void operator()(const Settings::ItemA<toggle>& item) const
+		void operator()(const ItemA<Type::toggle>& item) const
 		{
 			entryObject.SetMember("movieType", 2);
 			entryObject.SetMember("text", item.text.c_str());
@@ -105,7 +103,7 @@ namespace Settings
 				[](auto&& item)
 				{
 					return item.valueOptions &&
-						item.valueOptions->sourceType == Settings::SourceType::INIPrefSetting;
+						item.valueOptions->sourceType == SourceType::INIPrefSetting;
 				},
 				*item);
 		}
@@ -149,7 +147,7 @@ namespace Settings
 			return;
 		}
 
-		const auto& collection = Settings::StaticCollection::Instance;
+		const auto& collection = StaticCollection::Instance;
 		for (auto&& [i, item] : std::views::enumerate(collection.NewGame)) {
 			RE::GFxValue entryObject;
 			movie->CreateObject(&entryObject);
