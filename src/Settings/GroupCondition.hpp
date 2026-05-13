@@ -10,6 +10,24 @@ namespace Settings
 
 	using GroupControlStore = std::vector<std::pair<group_t, bool>>;
 
+	inline void InsertGroup(GroupControlStore& store, group_t group, bool active)
+	{
+		const auto it = std::ranges::find(
+			store,
+			group,
+			[](auto&& pair)
+			{
+				return pair.first;
+			});
+
+		if (it == std::ranges::end(store)) {
+			store.emplace_back(group, active);
+		}
+		else {
+			it->second |= active;
+		}
+	}
+
 	[[nodiscard]] inline bool IsGroupActive(const GroupControlStore& store, group_t group)
 	{
 		const auto it = std::ranges::find_if(

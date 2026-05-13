@@ -86,18 +86,21 @@ namespace Settings
 
 	struct GroupControlInserter
 	{
-		std::vector<std::pair<group_t, bool>>& groupControls;
+		GroupControlStore& groupControls;
 		double value;
 
 		void operator()(std::monostate const&) const {}
 
-		void operator()(group_t group) const { groupControls.emplace_back(group, !!value); }
+		void operator()(group_t group) const
+		{
+			InsertGroup(groupControls, group, !!value);
+		}
 
 		void operator()(std::vector<std::optional<group_t>> const& groups) const
 		{
 			for (const auto& [i, group] : std::views::enumerate(groups)) {
 				if (group) {
-					groupControls.emplace_back(*group, static_cast<std::ptrdiff_t>(value) == i);
+					InsertGroup(groupControls, *group, static_cast<std::ptrdiff_t>(value) == i);
 				}
 			}
 		}
@@ -118,8 +121,7 @@ namespace Settings
 	[[nodiscard]] static bool IsPrefSetting(double ID)
 	{
 		if (const auto item = QueryID(ID)) {
-			const auto sourceType = item->sourceType();
-			return sourceType && *sourceType == SourceType::INIPrefSetting;
+			return item->sourceType() == SourceType::INIPrefSetting;
 		}
 
 		return true;
