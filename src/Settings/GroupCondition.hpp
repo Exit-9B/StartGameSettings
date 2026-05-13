@@ -38,7 +38,7 @@ namespace Settings
 			std::unique_ptr<struct GroupCondition_ONLY>,
 			std::unique_ptr<struct GroupCondition_NOT>>;
 
-		type value;
+		type variant;
 	};
 
 	struct GroupCondition_OR
@@ -59,14 +59,14 @@ namespace Settings
 					subtrees,
 					[&](const auto& subtree)
 					{
-						return std::visit(*this, subtree.value);
+						return std::visit(*this, subtree.variant);
 					});
 			}
 
 			template <typename T>
 			bool operator()(std::unique_ptr<T> const& subtree) const
 			{
-				return std::visit(typename T::Checker{ store }, subtree->Inner().value);
+				return std::visit(typename T::Checker{ store }, subtree->Inner().variant);
 			}
 		};
 	};
@@ -83,7 +83,7 @@ namespace Settings
 		{
 			GroupControlStore const& store;
 
-			bool operator()(group_t const& group) const { return IsGroupActive(store, group); }
+			bool operator()(group_t group) const { return IsGroupActive(store, group); }
 
 			bool operator()(std::vector<GroupCondition> const& subtrees) const
 			{
@@ -91,14 +91,14 @@ namespace Settings
 					subtrees,
 					[&](const auto& subtree)
 					{
-						return std::visit(GroupConditionChecker{ store }, subtree.value);
+						return std::visit(GroupConditionChecker{ store }, subtree.variant);
 					});
 			}
 
 			template <typename T>
 			bool operator()(std::unique_ptr<T> const& subtree) const
 			{
-				return std::visit(typename T::Checker{ store }, subtree->Inner().value);
+				return std::visit(typename T::Checker{ store }, subtree->Inner().variant);
 			}
 		};
 	};
@@ -128,9 +128,10 @@ namespace Settings
 			bool operator()(std::vector<GroupCondition> const& subtrees) const
 			{
 				std::vector<group_t> groups;
+				groups.reserve(subtrees.size());
 				for (const auto& subtree : subtrees) {
-					if (std::holds_alternative<group_t>(subtree.value)) {
-						groups.emplace_back(std::get<group_t>(subtree.value));
+					if (std::holds_alternative<group_t>(subtree.variant)) {
+						groups.emplace_back(std::get<group_t>(subtree.variant));
 					}
 					else {
 						return false;
@@ -165,7 +166,7 @@ namespace Settings
 		{
 			GroupControlStore const& store;
 
-			bool operator()(group_t const& group) const { return !IsGroupActive(store, group); }
+			bool operator()(group_t group) const { return !IsGroupActive(store, group); }
 
 			bool operator()(std::vector<GroupCondition> const& subtrees) const
 			{
@@ -173,14 +174,14 @@ namespace Settings
 					subtrees,
 					[&](const auto& subtree)
 					{
-						return std::visit(GroupConditionChecker{ store }, subtree.value);
+						return std::visit(GroupConditionChecker{ store }, subtree.variant);
 					});
 			}
 
 			template <typename T>
 			bool operator()(std::unique_ptr<T> const& subtree) const
 			{
-				return !std::visit(typename T::Checker{ store }, subtree->Inner().value);
+				return !std::visit(typename T::Checker{ store }, subtree->Inner().variant);
 			}
 		};
 	};
@@ -192,6 +193,6 @@ namespace glz
 	struct meta<Settings::GroupCondition>
 	{
 		using mimic = Settings::GroupCondition::type;
-		static constexpr auto value = &Settings::GroupCondition::value;
+		static constexpr auto value = &Settings::GroupCondition::variant;
 	};
 }

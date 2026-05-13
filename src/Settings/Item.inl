@@ -129,4 +129,57 @@ namespace Settings
 		} break;
 		}
 	}
+
+	inline GroupControl const& Item::groupControl() const
+	{
+		return std::visit(
+			[](auto&& item) -> GroupControl const&
+			{
+				return item.groupControl;
+			},
+			variant);
+	}
+
+	inline std::optional<SourceType> Item::sourceType() const
+	{
+		return std::visit(
+			[](auto&& item) -> std::optional<SourceType>
+			{
+				return item.valueOptions ? std::optional(item.valueOptions->sourceType)
+										 : std::nullopt;
+			},
+			variant);
+	}
+
+	inline double Item::FetchValue() const
+	{
+		return std::visit(
+			[](auto&& item)
+			{
+				return item.FetchValue();
+			},
+			variant);
+	}
+
+	inline void Item::StoreValue(double value) const
+	{
+		return std::visit(
+			[value](auto&& item)
+			{
+				return item.StoreValue(value);
+			},
+			variant);
+	}
+
+	inline bool Item::IsActive(const GroupControlStore& store) const
+	{
+		return std::visit(
+			[&store](auto&& item)
+			{
+				return item.groupCondition
+					? std::visit(GroupConditionChecker{ store }, item.groupCondition->variant)
+					: true;
+			},
+			variant);
+	}
 }

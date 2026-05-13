@@ -7,6 +7,9 @@ namespace Settings::StaticCollection
 
 	void Load()
 	{
+		Instance.NewGame.clear();
+		NewGamePages.clear();
+
 		const auto dataHandler = RE::TESDataHandler::GetSingleton();
 		if (!dataHandler) {
 			return;

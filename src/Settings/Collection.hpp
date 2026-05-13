@@ -71,12 +71,27 @@ namespace Settings
 		inline void StoreValue(double value) const;
 	};
 
-	using Item = decltype(
-		[]<std::size_t... I>(std::index_sequence<I...>)
-			 -> std::variant<ItemA<*enchantum::index_to_enum<Type>(I)>...>
-		{
-			return {};
-		}(std::make_index_sequence<enchantum::count<Type>>()));
+	struct Item
+	{
+		using type = decltype(
+			[]<std::size_t... I>(std::index_sequence<I...>)
+				 -> std::variant<ItemA<*enchantum::index_to_enum<Type>(I)>...>
+			{
+				return {};
+			}(std::make_index_sequence<enchantum::count<Type>>()));
+
+		type variant;
+
+		[[nodiscard]] inline GroupControl const& groupControl() const;
+
+		[[nodiscard]] inline std::optional<SourceType> sourceType() const;
+
+		[[nodiscard]] inline double FetchValue() const;
+
+		inline void StoreValue(double value) const;
+
+		[[nodiscard]] inline bool IsActive(const GroupControlStore& store) const;
+	};
 
 	struct Collection
 	{
@@ -150,10 +165,17 @@ namespace glz
 	};
 
 	template <>
-	struct meta<Settings::Item>
+	struct meta<Settings::Item::type>
 	{
 		static constexpr std::string_view tag = "type"sv;
 		static constexpr auto ids = enchantum::names<Settings::Type>;
+	};
+
+	template <>
+	struct meta<Settings::Item>
+	{
+		using mimic = Settings::Item::type;
+		static constexpr auto value = &Settings::Item::variant;
 	};
 
 	template <>

@@ -15,12 +15,12 @@ namespace Settings
 		RE::GFxMovieView* movie;
 		RE::GFxValue& entryObject;
 
-		void operator()(const std::monostate&) const {}
-		void operator()(const std::string& help) const
+		void operator()(std::monostate const&) const {}
+		void operator()(std::string const& help) const
 		{
 			entryObject.SetMember("help", help.c_str());
 		}
-		void operator()(const std::vector<std::string>& help) const
+		void operator()(std::vector<std::string> const& help) const
 		{
 			RE::GFxValue items;
 			movie->CreateArray(&items);
@@ -36,7 +36,7 @@ namespace Settings
 		RE::GFxMovieView* movie;
 		RE::GFxValue& entryObject;
 
-		void operator()(const ItemA<Type::slider>& item) const
+		void operator()(ItemA<Type::slider> const& item) const
 		{
 			entryObject.SetMember("movieType", 0);
 			entryObject.SetMember("text", item.text.c_str());
@@ -52,7 +52,7 @@ namespace Settings
 			}
 		}
 
-		void operator()(const ItemA<Type::stepper>& item) const
+		void operator()(ItemA<Type::stepper> const& item) const
 		{
 			entryObject.SetMember("movieType", 1);
 			entryObject.SetMember("text", item.text.c_str());
@@ -71,7 +71,7 @@ namespace Settings
 			}
 		}
 
-		void operator()(const ItemA<Type::toggle>& item) const
+		void operator()(ItemA<Type::toggle> const& item) const
 		{
 			entryObject.SetMember("movieType", 2);
 			entryObject.SetMember("text", item.text.c_str());
@@ -118,13 +118,8 @@ namespace Settings
 	[[nodiscard]] static bool IsPrefSetting(double ID)
 	{
 		if (const auto item = QueryID(ID)) {
-			return std::visit(
-				[](auto&& item)
-				{
-					return item.valueOptions &&
-						item.valueOptions->sourceType == SourceType::INIPrefSetting;
-				},
-				*item);
+			const auto sourceType = item->sourceType();
+			return sourceType && *sourceType == SourceType::INIPrefSetting;
 		}
 
 		return true;
@@ -132,12 +127,7 @@ namespace Settings
 
 	[[nodiscard]] static bool HasGroupControl(const Item& item)
 	{
-		const GroupControl& groupControl = std::visit(
-			[](auto&& item)
-			{
-				return item.groupControl;
-			},
-			item);
+		const GroupControl& groupControl = item.groupControl();
 		return !std::holds_alternative<std::monostate>(groupControl);
 	}
 
@@ -152,12 +142,7 @@ namespace Settings
 	static void StoreValue(double ID, double value)
 	{
 		if (const auto item = QueryID(ID)) {
-			std::visit(
-				[value](auto&& item)
-				{
-					item.StoreValue(value);
-				},
-				*item);
+			item->StoreValue(value);
 			return;
 		}
 
@@ -202,16 +187,11 @@ namespace Settings
 
 		std::size_t begin = 0;
 		for (const std::size_t sentinel : StaticCollection::NewGamePages) {
-			std::vector<std::pair<group_t, bool>> groupControls;
+			GroupControlStore groupControls;
 			for (const auto i : std::views::iota(begin, sentinel)) {
 				const auto& item = StaticCollection::Instance.NewGame[i];
-				const GroupControl& groupControl = std::visit(
-					[](auto&& item)
-					{
-						return item.groupControl;
-					},
-					item);
 
+				const GroupControl& groupControl = item.groupControl();
 				if (std::holds_alternative<std::monostate>(groupControl)) {
 					continue;
 				}
@@ -221,12 +201,7 @@ namespace Settings
 					value = it->second;
 				}
 				else {
-					value = std::visit(
-						[](auto&& item)
-						{
-							return item.FetchValue();
-						},
-						item);
+					value = item.FetchValue();
 				}
 
 				std::visit(GroupControlInserter{ groupControls, value }, groupControl);
@@ -235,23 +210,14 @@ namespace Settings
 			for (const auto i : std::views::iota(begin, sentinel)) {
 				const auto& item = StaticCollection::Instance.NewGame[i];
 
-				if (!std::visit(
-						[&](auto&& item)
-						{
-							return item.groupCondition
-								? std::visit(
-									  GroupConditionChecker{ groupControls },
-									  item.groupCondition->value)
-								: true;
-						},
-						item))
+				if (!item.IsActive(groupControls))
 				{
 					continue;
 				}
 
 				RE::GFxValue entryObject;
 				movie->CreateObject(&entryObject);
-				std::visit(EntryDataSetter{ movie, entryObject }, item);
+				std::visit(EntryDataSetter{ movie, entryObject }, item.variant);
 				entryObject.SetMember("ID", ID_NewGame0 + i);
 				entryList.PushBack(entryObject);
 			}
