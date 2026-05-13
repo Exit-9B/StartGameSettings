@@ -39,13 +39,6 @@ namespace Settings
 		return it != std::ranges::end(store) && it->second;
 	}
 
-	inline void ForEachGroup(const GroupControlStore& store, auto&& op)
-	{
-		for (const auto& [group, value] : store) {
-			op(group, value);
-		}
-	}
-
 	struct GroupCondition
 	{
 		using type = std::variant<
@@ -134,12 +127,9 @@ namespace Settings
 			bool operator()(group_t group) const
 			{
 				bool result = true;
-				ForEachGroup(
-					store,
-					[&result, group](group_t g, bool s)
-					{
-						result &= s == (g == group);
-					});
+				for (const auto& [g, v] : store) {
+					result &= v == (g == group);
+				}
 				return result;
 			}
 
@@ -156,13 +146,14 @@ namespace Settings
 					}
 				}
 
-				bool result = true;
-				ForEachGroup(
-					store,
-					[&](group_t g, bool s)
-					{
-						result &= s == (std::ranges::find(groups, g) != std::ranges::end(groups));
-					});
+				bool result = false;
+				for (const auto& [g, v] : store) {
+					const bool inList = (std::ranges::find(groups, g) != std::ranges::end(groups));
+					if (v && !inList) {
+						return false;
+					}
+					result |= inList;
+				}
 				return result;
 			}
 

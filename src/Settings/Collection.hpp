@@ -69,6 +69,8 @@ namespace Settings
 		[[nodiscard]] inline double FetchValue() const;
 
 		inline void StoreValue(double value) const;
+
+		[[nodiscard]] inline bool IsActive(const GroupControlStore& store) const;
 	};
 
 	struct Item

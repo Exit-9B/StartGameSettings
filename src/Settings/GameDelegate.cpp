@@ -212,8 +212,7 @@ namespace Settings
 			for (const auto i : std::views::iota(begin, sentinel)) {
 				const auto& item = StaticCollection::Instance.NewGame[i];
 
-				if (!item.IsActive(groupControls))
-				{
+				if (!item.IsActive(groupControls)) {
 					continue;
 				}
 

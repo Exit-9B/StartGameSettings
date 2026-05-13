@@ -130,6 +130,13 @@ namespace Settings
 		}
 	}
 
+	template <Type TYPE>
+	inline bool ItemA<TYPE>::IsActive(const GroupControlStore& store) const
+	{
+		return groupCondition ? std::visit(GroupConditionChecker{ store }, groupCondition->variant)
+							  : true;
+	}
+
 	inline GroupControl const& Item::groupControl() const
 	{
 		return std::visit(
@@ -176,9 +183,7 @@ namespace Settings
 		return std::visit(
 			[&store](auto&& item)
 			{
-				return item.groupCondition
-					? std::visit(GroupConditionChecker{ store }, item.groupCondition->variant)
-					: true;
+				return item.IsActive(store);
 			},
 			variant);
 	}
