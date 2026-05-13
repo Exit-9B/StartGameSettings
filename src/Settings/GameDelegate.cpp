@@ -241,7 +241,7 @@ namespace Settings
 							return item.groupCondition
 								? std::visit(
 									  GroupConditionChecker{ groupControls },
-									  *item.groupCondition)
+									  item.groupCondition->value)
 								: true;
 						},
 						item))

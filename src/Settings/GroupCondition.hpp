@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glaze/glaze.hpp>
+
 namespace Settings
 {
 	using group_t = std::int64_t;
@@ -26,13 +28,18 @@ namespace Settings
 		}
 	}
 
-	using GroupCondition = std::variant<
-		group_t,
-		std::vector<group_t>,
-		std::unique_ptr<struct GroupCondition_OR>,
-		std::unique_ptr<struct GroupCondition_AND>,
-		std::unique_ptr<struct GroupCondition_ONLY>,
-		std::unique_ptr<struct GroupCondition_NOT>>;
+	struct GroupCondition
+	{
+		using type = std::variant<
+			group_t,
+			std::vector<struct GroupCondition>,
+			std::unique_ptr<struct GroupCondition_OR>,
+			std::unique_ptr<struct GroupCondition_AND>,
+			std::unique_ptr<struct GroupCondition_ONLY>,
+			std::unique_ptr<struct GroupCondition_NOT>>;
+
+		type value;
+	};
 
 	struct GroupCondition_OR
 	{
@@ -46,23 +53,25 @@ namespace Settings
 
 			bool operator()(group_t group) const { return IsGroupActive(store, group); }
 
-			bool operator()(std::vector<group_t> const& groups) const
+			bool operator()(std::vector<GroupCondition> const& subtrees) const
 			{
 				return std::ranges::any_of(
-					groups,
-					[&](auto group)
+					subtrees,
+					[&](const auto& subtree)
 					{
-						return IsGroupActive(store, group);
+						return std::visit(*this, subtree.value);
 					});
 			}
 
 			template <typename T>
 			bool operator()(std::unique_ptr<T> const& subtree) const
 			{
-				return std::visit(typename T::Checker{ store }, subtree->Inner());
+				return std::visit(typename T::Checker{ store }, subtree->Inner().value);
 			}
 		};
 	};
+
+	using GroupConditionChecker = GroupCondition_OR::Checker;
 
 	struct GroupCondition_AND
 	{
@@ -76,20 +85,20 @@ namespace Settings
 
 			bool operator()(group_t const& group) const { return IsGroupActive(store, group); }
 
-			bool operator()(std::vector<group_t> const& groups) const
+			bool operator()(std::vector<GroupCondition> const& subtrees) const
 			{
 				return std::ranges::all_of(
-					groups,
-					[&](auto group)
+					subtrees,
+					[&](const auto& subtree)
 					{
-						return IsGroupActive(store, group);
+						return std::visit(GroupConditionChecker{ store }, subtree.value);
 					});
 			}
 
 			template <typename T>
 			bool operator()(std::unique_ptr<T> const& subtree) const
 			{
-				return std::visit(typename T::Checker{ store }, subtree->Inner());
+				return std::visit(typename T::Checker{ store }, subtree->Inner().value);
 			}
 		};
 	};
@@ -104,20 +113,30 @@ namespace Settings
 		{
 			GroupControlStore const& store;
 
-			bool operator()(group_t const& group) const
+			bool operator()(group_t group) const
 			{
 				bool result = true;
 				ForEachGroup(
 					store,
-					[&](group_t g, bool s)
+					[&result, group](group_t g, bool s)
 					{
 						result &= s == (g == group);
 					});
 				return result;
 			}
 
-			bool operator()(std::vector<group_t> const& groups) const
+			bool operator()(std::vector<GroupCondition> const& subtrees) const
 			{
+				std::vector<group_t> groups;
+				for (const auto& subtree : subtrees) {
+					if (std::holds_alternative<group_t>(subtree.value)) {
+						groups.emplace_back(std::get<group_t>(subtree.value));
+					}
+					else {
+						return false;
+					}
+				}
+
 				bool result = true;
 				ForEachGroup(
 					store,
@@ -148,23 +167,31 @@ namespace Settings
 
 			bool operator()(group_t const& group) const { return !IsGroupActive(store, group); }
 
-			bool operator()(std::vector<group_t> const& groups) const
+			bool operator()(std::vector<GroupCondition> const& subtrees) const
 			{
 				return std::ranges::none_of(
-					groups,
-					[&](auto group)
+					subtrees,
+					[&](const auto& subtree)
 					{
-						return IsGroupActive(store, group);
+						return std::visit(GroupConditionChecker{ store }, subtree.value);
 					});
 			}
 
 			template <typename T>
 			bool operator()(std::unique_ptr<T> const& subtree) const
 			{
-				return !std::visit(typename T::Checker{ store }, subtree->Inner());
+				return !std::visit(typename T::Checker{ store }, subtree->Inner().value);
 			}
 		};
 	};
+}
 
-	using GroupConditionChecker = GroupCondition_OR::Checker;
+namespace glz
+{
+	template <>
+	struct meta<Settings::GroupCondition>
+	{
+		using mimic = Settings::GroupCondition::type;
+		static constexpr auto value = &Settings::GroupCondition::value;
+	};
 }
