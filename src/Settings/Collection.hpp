@@ -68,6 +68,8 @@ namespace Settings
 
 		[[nodiscard]] inline double FetchValue() const;
 
+		[[nodiscard]] inline double InitialValue() const;
+
 		inline void StoreValue(double value) const;
 
 		[[nodiscard]] inline bool IsActive(const GroupControlStore& store) const;
@@ -89,6 +91,8 @@ namespace Settings
 		[[nodiscard]] inline std::optional<SourceType> sourceType() const;
 
 		[[nodiscard]] inline double FetchValue() const;
+
+		[[nodiscard]] inline double InitialValue() const;
 
 		inline void StoreValue(double value) const;
 

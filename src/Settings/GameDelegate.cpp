@@ -200,7 +200,7 @@ namespace Settings
 					value = it->second;
 				}
 				else {
-					value = item.FetchValue();
+					value = item.InitialValue();
 				}
 				values.emplace_back(value);
 

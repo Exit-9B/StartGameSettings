@@ -84,6 +84,29 @@ namespace Settings
 	}
 
 	template <Type TYPE>
+	inline double ItemA<TYPE>::InitialValue() const
+	{
+		if (!valueOptions)
+			return 0.0;
+
+		switch (valueOptions->sourceType) {
+		case SourceType::INIPrefSetting:
+		{
+			if (id) {
+				if (const auto collection = RE::INIPrefSettingCollection::GetSingleton()) {
+					if (const auto setting = collection->GetSetting(id->data())) {
+						return FetchFrom(setting);
+					}
+				}
+			}
+		} break;
+		default:;
+		}
+
+		return valueOptions->defaultValue;
+	}
+
+	template <Type TYPE>
 	inline void ItemA<TYPE>::StoreValue(double value) const
 	{
 		if (!valueOptions)
@@ -164,6 +187,16 @@ namespace Settings
 			[](auto&& item)
 			{
 				return item.FetchValue();
+			},
+			variant);
+	}
+
+	inline double Item::InitialValue() const
+	{
+		return std::visit(
+			[](auto&& item)
+			{
+				return item.InitialValue();
 			},
 			variant);
 	}
