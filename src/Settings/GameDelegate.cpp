@@ -44,7 +44,6 @@ namespace Settings
 
 			if (const auto& valueOptions = item.valueOptions) {
 				entryObject.SetMember("defaultVal", item.valueOptions->defaultValue);
-				entryObject.SetMember("value", item.FetchValue());
 
 				entryObject.SetMember("minimum", item.valueOptions->min);
 				entryObject.SetMember("maximum", item.valueOptions->max);
@@ -60,7 +59,6 @@ namespace Settings
 
 			if (const auto& valueOptions = item.valueOptions) {
 				entryObject.SetMember("defaultVal", item.valueOptions->defaultValue);
-				entryObject.SetMember("value", item.FetchValue());
 
 				RE::GFxValue options;
 				movie->CreateArray(&options);
@@ -79,7 +77,6 @@ namespace Settings
 
 			if (const auto& valueOptions = item.valueOptions) {
 				entryObject.SetMember("defaultVal", item.valueOptions->defaultValue);
-				entryObject.SetMember("value", item.FetchValue());
 			}
 		}
 	};
@@ -190,13 +187,13 @@ namespace Settings
 		std::size_t begin = 0;
 		for (const std::size_t sentinel : StaticCollection::NewGamePages) {
 			GroupControlStore groupControls;
+			std::vector<double> values;
+			values.reserve(sentinel - begin);
+
 			for (const auto i : std::views::iota(begin, sentinel)) {
 				const auto& item = StaticCollection::Instance.NewGame[i];
 
 				const GroupControl& groupControl = item.groupControl();
-				if (std::holds_alternative<std::monostate>(groupControl)) {
-					continue;
-				}
 
 				double value;
 				if (const auto it = oldValues.find(ID_NewGame0 + i); it != oldValues.end()) {
@@ -205,6 +202,7 @@ namespace Settings
 				else {
 					value = item.FetchValue();
 				}
+				values.emplace_back(value);
 
 				std::visit(GroupControlInserter{ groupControls, value }, groupControl);
 			}
@@ -218,8 +216,10 @@ namespace Settings
 
 				RE::GFxValue entryObject;
 				movie->CreateObject(&entryObject);
+				const double value = values[i - begin];
 				std::visit(EntryDataSetter{ movie, entryObject }, item.variant);
 				entryObject.SetMember("ID", ID_NewGame0 + i);
+				entryObject.SetMember("value", value);
 				entryList.PushBack(entryObject);
 			}
 
