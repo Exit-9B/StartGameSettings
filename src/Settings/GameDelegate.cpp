@@ -88,10 +88,7 @@ namespace Settings
 
 		void operator()(std::monostate const&) const {}
 
-		void operator()(group_t group) const
-		{
-			InsertGroup(groupControls, group, !!value);
-		}
+		void operator()(group_t group) const { InsertGroup(groupControls, group, !!value); }
 
 		void operator()(std::vector<std::optional<group_t>> const& groups) const
 		{
@@ -148,6 +145,71 @@ namespace Settings
 		logger::error("Failed to resolve option ID: {}"sv, ID);
 	}
 
+	static void AddOptions(
+		RE::GFxMovieView* movie,
+		RE::GFxValue& entryList,
+		const std::vector<Item>& items,
+		const std::vector<std::size_t>& pages)
+	{
+		assert(entryList.IsArray());
+
+		std::map<double, double> oldValues;
+		for (const auto i : std::views::iota(0U, entryList.GetArraySize())) {
+			RE::GFxValue entryObject;
+			entryList.GetElement(i, &entryObject);
+			if (entryObject.IsObject()) {
+				RE::GFxValue ID, value;
+				entryObject.GetMember("ID", &ID);
+				entryObject.GetMember("value", &value);
+				if (ID.IsNumber() && value.IsNumber()) {
+					oldValues[ID.GetNumber()] = value.GetNumber();
+				}
+			}
+		}
+		entryList.ClearElements();
+
+		std::size_t begin = 0;
+		for (const std::size_t sentinel : pages) {
+			GroupControlStore groupControls;
+			std::vector<double> values;
+			values.reserve(sentinel - begin);
+
+			for (const auto i : std::views::iota(begin, sentinel)) {
+				const auto& item = items[i];
+
+				const GroupControl& groupControl = item.groupControl();
+
+				double value;
+				if (const auto it = oldValues.find(ID_NewGame0 + i); it != oldValues.end()) {
+					value = it->second;
+				}
+				else {
+					value = item.InitialValue();
+				}
+				values.emplace_back(value);
+
+				std::visit(GroupControlInserter{ groupControls, value }, groupControl);
+			}
+
+			for (const auto i : std::views::iota(begin, sentinel)) {
+				const auto& item = items[i];
+
+				if (!item.IsActive(groupControls)) {
+					continue;
+				}
+
+				RE::GFxValue entryObject;
+				movie->CreateObject(&entryObject);
+				std::visit(EntryDataSetter{ movie, entryObject }, item.variant);
+				entryObject.SetMember("ID", ID_NewGame0 + i);
+				entryObject.SetMember("value", values[i - begin]);
+				entryList.PushBack(entryObject);
+			}
+
+			begin = sentinel;
+		}
+	}
+
 	void RequestNewGameOptions(const RE::FxDelegateArgs& a_params)
 	{
 		if (a_params.GetArgCount() < 1) {
@@ -169,62 +231,11 @@ namespace Settings
 			return;
 		}
 
-		std::map<double, double> oldValues;
-		for (const auto i : std::views::iota(0U, entryList.GetArraySize())) {
-			RE::GFxValue entryObject;
-			entryList.GetElement(i, &entryObject);
-			if (entryObject.IsObject()) {
-				RE::GFxValue ID, value;
-				entryObject.GetMember("ID", &ID);
-				entryObject.GetMember("value", &value);
-				if (ID.IsNumber() && value.IsNumber()) {
-					oldValues[ID.GetNumber()] = value.GetNumber();
-				}
-			}
-		}
-		entryList.ClearElements();
-
-		std::size_t begin = 0;
-		for (const std::size_t sentinel : StaticCollection::NewGamePages) {
-			GroupControlStore groupControls;
-			std::vector<double> values;
-			values.reserve(sentinel - begin);
-
-			for (const auto i : std::views::iota(begin, sentinel)) {
-				const auto& item = StaticCollection::Instance.NewGame[i];
-
-				const GroupControl& groupControl = item.groupControl();
-
-				double value;
-				if (const auto it = oldValues.find(ID_NewGame0 + i); it != oldValues.end()) {
-					value = it->second;
-				}
-				else {
-					value = item.InitialValue();
-				}
-				values.emplace_back(value);
-
-				std::visit(GroupControlInserter{ groupControls, value }, groupControl);
-			}
-
-			for (const auto i : std::views::iota(begin, sentinel)) {
-				const auto& item = StaticCollection::Instance.NewGame[i];
-
-				if (!item.IsActive(groupControls)) {
-					continue;
-				}
-
-				RE::GFxValue entryObject;
-				movie->CreateObject(&entryObject);
-				const double value = values[i - begin];
-				std::visit(EntryDataSetter{ movie, entryObject }, item.variant);
-				entryObject.SetMember("ID", ID_NewGame0 + i);
-				entryObject.SetMember("value", value);
-				entryList.PushBack(entryObject);
-			}
-
-			begin = sentinel;
-		}
+		AddOptions(
+			movie,
+			entryList,
+			StaticCollection::Instance.NewGame,
+			StaticCollection::NewGamePages);
 	}
 
 	void OptionChange(const RE::FxDelegateArgs& a_params)
