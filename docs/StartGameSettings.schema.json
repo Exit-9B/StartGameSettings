@@ -17,6 +17,9 @@
       "type": "string",
       "oneOf": [
         {
+          "pattern": "^\\d*$"
+        },
+        {
           "pattern": "^[^\\$]",
           "description": "WARNING: String will not be localized",
           "deprecated": true
